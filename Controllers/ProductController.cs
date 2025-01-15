@@ -1,42 +1,42 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using ProductAPI.Data;
+using ProductAPI.Services;
 
-[Route("api/v1/products")]
-[ApiController]
-public class ProductsController : ControllerBase
+namespace ProductAPI.Controllers
 {
-    private readonly ProductDbContext _context;
 
-    public ProductsController(ProductDbContext context)
+    [ApiController]
+    [Route("api/v1/[controller]")]
+    public class ProductController : ControllerBase
     {
-        _context = context;
-    }
+        private readonly IProductService _service;
 
-    [HttpGet]
-    public async Task<IActionResult> GetAll([FromQuery] int page = 1, [FromQuery] int pageSize = 10)
-    {
-        var products = await _context.Products
-            .Skip((page - 1) * pageSize)
-            .Take(pageSize)
-            .ToListAsync();
-        return Ok(products);
-    }
+        public ProductController(IProductService service)
+        {
+            _service = service;
+        }
 
-    [HttpGet("{id}")]
-    public async Task<IActionResult> GetById(int id)
-    {
-        var product = await _context.Products.FindAsync(id);
-        if (product == null) return NotFound();
-        return Ok(product);
-    }
+        [HttpGet]
+        public async Task<IActionResult> GetProducts([FromQuery] int pageNumber = 1, [FromQuery] int pageSize = 10)
+        {
+            var products = await _service.GetAllProductsAsync(pageNumber, pageSize);
+            return Ok(products);
+        }
 
-    [HttpPatch("{id}")]
-    public async Task<IActionResult> UpdateDescription(int id, [FromBody] string description)
-    {
-        var product = await _context.Products.FindAsync(id);
-        if (product == null) return NotFound();
-        product.Description = description;
-        await _context.SaveChangesAsync();
-        return NoContent();
+        [HttpGet("{id}")]
+        public async Task<IActionResult> GetProductById(int id)
+        {
+            var product = await _service.GetProductByIdAsync(id);
+            if (product == null) return NotFound();
+            return Ok(product);
+        }
+
+        [HttpPut("{id}")]
+        public async Task<IActionResult> UpdateProductDescription(int id, [FromBody] string description)
+        {
+            await _service.UpdateProductDescriptionAsync(id, description);
+            return NoContent();
+        }
     }
 }
